@@ -1,4 +1,5 @@
 use rand::seq::SliceRandom;
+use zxcvbn::zxcvbn;
 
 // q: what is &[u8]?
 // a: &[u8] 是一个字节切片，它是一个引用，指向一个字节数组，它的类型是 &[u8]，表示一个字节切片。
@@ -99,9 +100,15 @@ pub fn process_genpass(
 
     password.shuffle(&mut rng);
 
-    println!("{:?}", String::from_utf8(password)?);
+    let password = String::from_utf8(password)?;
+
+    println!("{:?}", password);
     // q: what does from_utf8_lossy() do? compare it with from_utf8()? explain it in english.
     // a: from_utf8_lossy() is a method that converts a byte slice to a string slice, it replaces invalid UTF-8 sequences with the Unicode replacement character U+FFFD, it is lossy because it may lose information, from_utf8() is a method that converts a byte slice to a string slice, it returns an error if the byte slice is not valid UTF-8, it is not lossy because it does not lose information.
+
+    // output password strength in stderr
+    let estimate = zxcvbn(&password, &[])?;
+    eprintln!("Password strength: {}", estimate.score());
 
     Ok(())
 }
