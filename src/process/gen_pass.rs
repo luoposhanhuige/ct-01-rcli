@@ -110,5 +110,10 @@ pub fn process_genpass(
     let estimate = zxcvbn(&password, &[])?;
     eprintln!("Password strength: {}", estimate.score());
 
+    // q: what is benefit of using eprintln!()?
+    // a: eprintln!() is a macro that prints a message to the standard error stream, it is useful for printing error messages, because it prints to the standard error stream, which is separate from the standard output stream.
+    // for example, cargo run -- genpass -l 12 >out.txt
+    // 将直接打印出密码，而不会将密码强度打印出来。
+
     Ok(())
 }
