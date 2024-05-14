@@ -1,3 +1,6 @@
+// cargo run -- genpass -l 12
+// cargo nextest run
+
 use rand::seq::SliceRandom;
 use zxcvbn::zxcvbn;
 
@@ -17,12 +20,25 @@ const LOWER: &[u8] = b"abcdefghijkmnopqrstuvwxyz";
 const NUMBERS: &[u8] = b"123456789";
 const SYMBOLS: &[u8] = b"!@#$%^&*_";
 
+// q: what does b means in b"ABCDEFGHJKLMNPQRSTUVWXYZ"?
+// a: b"ABCDEFGHJKLMNPQRSTUVWXYZ" is a byte string literal, its type is &[u8; 26], it represents an array of 26 bytes.
+// q: byte string?
+// a: byte string is a string that contains bytes, it is a sequence of bytes, it is a byte array.
+// q: so, the b"ABCDEFGHJKLMNPQRSTUVWXYZ" is a byte array? and the element of it is a one-byte character? how to convert it to a string?
+// a: Yes, the b"ABCDEFGHJKLMNPQRSTUVWXYZ" is a byte array, and the element of it is a one-byte character, to convert it to a string, you can use the from_utf8_lossy() method.
+// q: const UPPER: &[u16] = b"ABCDEFGHJKLMNPQRSTUVWXYZ"; now the UPPER is a two-byte string literral?
+// a: No, the UPPER is a slice of 16-bit unsigned integers, it is a reference that points to an array of 16-bit unsigned integers, its type is &[u16], which represents a slice of 16-bit unsigned integers.
+
 // pub fn process_genpass(opts: &GenpassOpts) -> anyhow::Result<()> {
 // q: why remove opts: &GenpassOpts?
 // a: 因为这里的 process_genpass() 函数不再需要 GenpassOpts 参数，而是直接使用 Opts 参数，所以将 GenpassOpts 参数去掉。
 // 直接用单个参数的好处，方便今后这段代码可以直接移植
 pub fn process_genpass(
     length: u8,
+    // q: the length is u8, what is the range of u8?
+    // a: u8 is an unsigned 8-bit integer, its range is 0..255.
+    // q: it cannot be set to 256?
+    // a: No, it cannot be set to 256, because the maximum value of u8 is 255.
     upper: bool,
     lower: bool,
     numbers: bool,
@@ -47,11 +63,18 @@ pub fn process_genpass(
 
     if upper {
         chars.extend_from_slice(UPPER);
+        // q: what does this statement mean?
+        // a: 这个语句的意思是将 UPPER 数组中的元素添加到 chars 数组中。
+        // q: what is extend_from_slice()?
+        // a: extend_from_slice() 是一个方法，用于将一个数组中的元素添加到另一个数组中。
+
         password.push(
             *UPPER
                 .choose(&mut rng)
                 .expect("UPPER won't be empty in this context"),
         );
+        // q: what does this statement mean?
+        // a: 这个语句的意思是从 UPPER 数组中随机选择一个元素，然后将这个元素添加到 password 数组中。
     }
     // q: what does b mean in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ"?
     // a: b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" 是一个字节字符串字面量，它的类型是 &[u8; 26]，表示一个包含26个字节的数组。
@@ -99,8 +122,12 @@ pub fn process_genpass(
     }
 
     password.shuffle(&mut rng);
+    // q: what does this statement mean?
+    // a: 这个语句的意思是将 password 数组中的元素随机排序。
 
     let password = String::from_utf8(password)?;
+    // q: what does this statement mean?
+    // a: 这个语句的意思是将 password 数组转换为字符串。
 
     println!("{:?}", password);
     // q: what does from_utf8_lossy() do? compare it with from_utf8()? explain it in english.

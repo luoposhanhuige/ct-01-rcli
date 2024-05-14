@@ -1,23 +1,11 @@
 use clap::Parser;
-use std::{fmt, path::Path, str::FromStr};
+use std::{fmt, str::FromStr};
 
-#[derive(Debug, Parser)]
-#[command(name = "rcli", version, author, about, long_about = None)]
-pub struct Opts {
-    #[command(subcommand)]
-    pub cmd: Subcommand,
-}
-
-#[derive(Debug, Parser)]
-pub enum Subcommand {
-    #[command(name = "csv", about = "Show CSV, or convert CSV to other formats")]
-    Csv(CsvOpts), // 这是 clap mod 的特性用法之一，灵活将 enum 特性与 struct 特性结合起来，实现了更复杂的命令行参数解析。
-    #[command(name = "genpass", about = "Generate a random password")]
-    Genpass(GenpassOpts),
-}
+use super::verify_input_file;
 
 #[derive(Debug, Clone, Copy)]
 pub enum OutputFormat {
+    // 输出什么格式的文件？
     Json,
     Yaml,
 }
@@ -30,7 +18,8 @@ pub struct CsvOpts {
 
     #[arg(short, long)]
     pub output: Option<String>,
-
+    // q: why does the output field have the Option type?
+    // a: output 字段有 Option 类型，是因为 output 字段是可选的，如果用户没有指定 output 参数，则 output 字段的值为 None，如果用户指定了 output 参数，则 output 字段的值为 Some(output)。
     #[arg(short, long, value_parser = parse_format, default_value = "json")]
     // parse_format 函数，写在下方
     pub format: OutputFormat,
@@ -40,43 +29,6 @@ pub struct CsvOpts {
 
     #[arg(long, default_value_t = true)] // 避免 -h 与 默认的 help 冲突，所以去掉 short
     pub header: bool,
-}
-
-#[derive(Debug, Parser)]
-pub struct GenpassOpts {
-    #[arg(short, long, default_value = "16")]
-    pub length: u8,
-    // q: default_value = "16" or default_value = "32")
-    // a: 这里的 default_value 是一个字符串字面量，所以，可以是任意长度的字符串，只要能转换为 u8 类型即可。
-    // q: is 16 the byte length or the character length?
-    // a: 这里的 16 是字符长度，不是字节长度。
-    // q: 如果包括中文与英文字符混合呢？怎么计算？
-    // a: 这里的 16 是字符长度，不是字节长度，所以，无论是中文还是英文，都是一个字符，都是一个长度。
-    // q: default_value or default_value_t
-    // a: default_value_t 是一个泛型，可以指定类型，而 default_value 是一个字符串字面量，只要能转换为指定类型即可。
-    // q: what is the difference between default_value = "16" and default_value_t = 16?
-    // a: default_value = "16" 是一个字符串字面量，需要转换为 u8 类型，而 default_value_t = 16 是一个 u8 类型，不需要转换。
-    // q: default_value = "16" or default_value = 16, which statement is better?
-    // a: default_value = "16" is better, because it's more flexible, and can be used in more situations.
-    #[arg(long, default_value = "true")]
-    pub uppercase: bool,
-
-    #[arg(long, default_value = "true")]
-    pub lowercase: bool,
-
-    #[arg(long, default_value = "true")]
-    pub numbers: bool,
-
-    #[arg(long, default_value = "true")]
-    pub symbols: bool,
-}
-
-fn verify_input_file(filename: &str) -> Result<String, String> {
-    if Path::new(filename).exists() {
-        Ok(filename.to_string())
-    } else {
-        Err("Input file does not exist".to_string())
-    }
 }
 
 // fn parse_format(format: &str) -> Result<OutputFormat, String> {
@@ -116,6 +68,9 @@ impl FromStr for OutputFormat {
         }
     }
 }
+
+// q: what is the connection between the above two impl block and the fn parse_format()?
+// a: The above two impl blocks are used to convert the OutputFormat enum variant to a string, and the fn parse_format() is used to convert a string to an OutputFormat enum variant. The connection between them is that they are used together to convert between the OutputFormat enum variant and a string.
 
 impl fmt::Display for OutputFormat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
