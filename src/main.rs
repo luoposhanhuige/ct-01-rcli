@@ -2,10 +2,13 @@
 // cargo run -- csv -i assets/juventus.csv
 // cargo run -- csv -i assets/juventus.csv -o output.json
 
+use std::fs;
+
 use clap::Parser;
 use rcli::{
-    process_csv, process_decode, process_encode, process_genpass, Base64SubCommand, Opts,
-    Subcommand,
+    process_csv, process_decode, process_encode, process_genpass, process_text_generate,
+    process_text_sign, process_text_verify, Base64SubCommand, Opts, Subcommand, TextSignFormat,
+    TextSubCommand,
 };
 // q: how does the compiler find process_csv, process_genpass, Opts, Subcommand?
 // a: 编译器会根据当前目录结构，自动查找 process_csv、process_genpass、Opts、Subcommand 这几个模块，如果找到了，则会导入这几个模块，如果没有找到，则会报错。
@@ -19,6 +22,7 @@ use rcli::{
 
 // q: cargo add or cargo install, what is the difference?
 // a: cargo add 是一个 cargo 的插件，用于添加依赖，cargo install 是一个 cargo 的命令，用于安装二进制文件。
+use zxcvbn::zxcvbn;
 
 fn main() -> anyhow::Result<()> {
     // q: why does not need to import anyhow before using it?
@@ -61,7 +65,7 @@ fn main() -> anyhow::Result<()> {
         }
 
         Subcommand::Genpass(opts) => {
-            process_genpass(
+            let password = process_genpass(
                 opts.length,
                 opts.uppercase,
                 opts.lowercase,
@@ -69,18 +73,57 @@ fn main() -> anyhow::Result<()> {
                 opts.symbols,
             )?;
 
-            // println!("Generating password: {:?}", opts);
+            println!("{}", password); // 将打印出不带双引号的字符串 This prints the password using the Display trait.
+
+            // output password strength in stderr
+            let estimate = zxcvbn(&password, &[])?;
+            eprintln!("Password strength: {}", estimate.score());
         }
 
         Subcommand::Base64(subcmd) => {
             match subcmd {
                 Base64SubCommand::Encode(opts) => {
                     // println!("Encoding: {:?}", opts);
-                    process_encode(&opts.input, opts.format)?;
+                    let encoded = process_encode(&opts.input, opts.format)?;
+                    println!("{}", encoded);
                 }
                 Base64SubCommand::Decode(opts) => {
                     // println!("Decoding: {:?}", opts);
-                    process_decode(&opts.input, opts.format)?;
+                    let decoded = process_decode(&opts.input, opts.format)?;
+                    let decoded = String::from_utf8(decoded)?;
+                    println!("{}", decoded);
+                }
+            }
+        }
+
+        Subcommand::Text(subcmd) => {
+            match subcmd {
+                TextSubCommand::Sign(opts) => {
+                    let signed = process_text_sign(&opts.input, &opts.key, opts.format)?;
+                    println!("{}", signed);
+                }
+
+                TextSubCommand::Verify(opts) => {
+                    let verified =
+                        process_text_verify(&opts.input, &opts.key, &opts.sig, opts.format)?;
+                    println!("{}", verified);
+                }
+
+                TextSubCommand::Generate(opts) => {
+                    let key = process_text_generate(opts.format)?;
+                    match opts.format {
+                        TextSignFormat::Blake3 => {
+                            let name = opts.output.join("blake3.txt");
+                            fs::write(name, &key[0])?;
+                        }
+                        TextSignFormat::ED25519 => {
+                            let name = &opts.output;
+                            fs::write(name.join("ed25519.sk"), &key[0])?;
+                            fs::write(name.join("ed25519.pk"), &key[1])?;
+                        }
+                    }
+
+                    // println!("Generating key pair: {:?}", opts);
                 }
             }
         }

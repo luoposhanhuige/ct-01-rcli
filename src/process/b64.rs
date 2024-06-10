@@ -13,16 +13,15 @@
 // a: 可以查看 Cargo.toml 文件，查看是否有 base64 这个依赖。
 // q: how to check whether the base64 is added through the command line?
 // a: 可以查看 Cargo.toml 文件，查看是否有 base64 这个依赖。
-use std::{fs::File, io::Read};
 
-use crate::Base64Format;
+use crate::{get_reader, Base64Format};
 
 use base64::{
     engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
     Engine as _,
 };
 
-pub fn process_encode(input: &str, format: Base64Format) -> anyhow::Result<()> {
+pub fn process_encode(input: &str, format: Base64Format) -> anyhow::Result<String> {
     let mut reader = get_reader(input)?;
     let mut buf = Vec::new();
     // q: what does this mean? why we need Vec to store the data?
@@ -47,11 +46,11 @@ pub fn process_encode(input: &str, format: Base64Format) -> anyhow::Result<()> {
         Base64Format::Standard => STANDARD.encode(&buf),
         Base64Format::UrlSafe => URL_SAFE_NO_PAD.encode(&buf),
     };
-    println!("{}", encoded);
-    Ok(())
+    // println!("{}", encoded);
+    Ok(encoded)
 }
 
-pub fn process_decode(input: &str, format: Base64Format) -> anyhow::Result<()> {
+pub fn process_decode(input: &str, format: Base64Format) -> anyhow::Result<Vec<u8>> {
     let mut reader = get_reader(input)?;
     // q: why is the result of "get_reader(input)?" a Box type, while the result of "get_reader(input)" is a Result type?
     // q: "get_reader(input)?" 与 "get_reader(input)" 返回的类型有什么不同？
@@ -66,11 +65,10 @@ pub fn process_decode(input: &str, format: Base64Format) -> anyhow::Result<()> {
         Base64Format::UrlSafe => URL_SAFE_NO_PAD.decode(buf)?,
     };
 
-    // TODO: decoded data might not be string (but for this example, we assume it is)
-    let decoded = String::from_utf8(decoded)?;
-    println!("{}", decoded);
+    // let decoded = String::from_utf8(decoded)?;
+    // println!("{}", decoded);
 
-    Ok(())
+    Ok(decoded)
 }
 
 // q: what does this mean?
@@ -79,16 +77,6 @@ pub fn process_decode(input: &str, format: Base64Format) -> anyhow::Result<()> {
 // a: from_utf8() 的返回值是一个 Result 类型，用于处理转换失败的情况。
 // q: vec 是 &[u8] 类型？
 // a: 是的，vec 是一个 &[u8] 类型，用于存储二进制数据。
-
-// input 是一个文件路径
-fn get_reader(input: &str) -> anyhow::Result<Box<dyn Read>> {
-    let reader: Box<dyn Read> = if input == "-" {
-        Box::new(std::io::stdin())
-    } else {
-        Box::new(File::open(input)?)
-    };
-    Ok(reader)
-}
 
 // q: what does this mean with if input == "-"?
 // a: 这里的 if input == "-" 是一个条件判断，用于判断 input 是否为 "-"。

@@ -1,8 +1,9 @@
 mod base64;
 mod csv;
 mod genpass;
+mod text;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 // q: what is difference between mod and use keyword?
 // a: mod 是用于定义模块，use 是用于导入模块。
 // q: 上述 mod csv, mod genpass, mod base64，是什么意思？
@@ -25,6 +26,7 @@ use self::{csv::CsvOpts, genpass::GenpassOpts};
 pub use self::{
     base64::{Base64Format, Base64SubCommand},
     csv::OutputFormat,
+    text::{TextSignFormat, TextSubCommand},
 };
 // q: what does pub use mean?
 // a: pub use 是用于导出模块中的结构体和方法，使其可以在其他模块中使用。
@@ -91,9 +93,11 @@ pub enum Subcommand {
     Genpass(GenpassOpts),
     #[command(subcommand)]
     Base64(Base64SubCommand),
+    #[command(subcommand)]
+    Text(TextSubCommand),
 }
 
-fn verify_input_file(filename: &str) -> Result<String, String> {
+fn verify_file(filename: &str) -> Result<String, String> {
     // if input is "-" or file exists
     if filename == "-" || Path::new(filename).exists() {
         Ok(filename.to_string())
@@ -101,6 +105,15 @@ fn verify_input_file(filename: &str) -> Result<String, String> {
         // filename.to_string() 和 filename.into() 是等价的，都是将一个 &str 转换为 String 类型。
     } else {
         Err("Input file does not exist".to_string())
+    }
+}
+
+fn verify_path(path: &str) -> Result<PathBuf, String> {
+    let p = Path::new(path);
+    if p.exists() && p.is_dir() {
+        Ok(path.into())
+    } else {
+        Err("Path does not exist or is not a directory".to_string())
     }
 }
 
@@ -129,17 +142,14 @@ mod tests {
 
     #[test]
     fn test_verify_input_file() {
-        assert_eq!(verify_input_file("-"), Ok("-".to_string()));
+        assert_eq!(verify_file("-"), Ok("-".to_string()));
         assert_eq!(
-            verify_input_file("*"),
+            verify_file("*"),
             Err("Input file does not exist".to_string())
         );
+        assert_eq!(verify_file("Cargo.toml"), Ok("Cargo.toml".to_string()));
         assert_eq!(
-            verify_input_file("Cargo.toml"),
-            Ok("Cargo.toml".to_string())
-        );
-        assert_eq!(
-            verify_input_file("not-exist"),
+            verify_file("not-exist"),
             Err("Input file does not exist".to_string())
         );
     }

@@ -2,7 +2,6 @@
 // cargo nextest run
 
 use rand::seq::SliceRandom;
-use zxcvbn::zxcvbn;
 
 // q: what is &[u8]?
 // a: &[u8] 是一个字节切片，它是一个引用，指向一个字节数组，它的类型是 &[u8]，表示一个字节切片。
@@ -43,7 +42,10 @@ pub fn process_genpass(
     lower: bool,
     numbers: bool,
     symbols: bool,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<String> {
+    // q: anyhow::Result<()> vs anyhow::Result<String>
+    // a: anyhow::Result<()> 表示一个 Result 类型，它的 Ok 值是一个空元组，它的 Err 值是一个 anyhow::Error 类型，而 anyhow::Result<String> 表示一个 Result 类型，它的 Ok 值是一个字符串，它的 Err 值是一个 anyhow::Error 类型。
+
     // a: 这里的 rand::thread_rng() 是一个函数，用于生成一个随机数生成器，这个生成器是线程安全的，可以在多线程中使用。
     // q: rand::thread_rng() 返回值是随机生成器，什么是随机生成器？它的值是什么类型？多大范围？
     // a: 随机生成器是一个结构体，它的类型是 ThreadRng，它的范围是 0..u32::MAX。
@@ -129,18 +131,22 @@ pub fn process_genpass(
     // q: what does this statement mean?
     // a: 这个语句的意思是将 password 数组转换为字符串。
 
-    println!("{:?}", password);
+    // println!("{:?}", password); // 将打印出带双引号的字符串 This prints the password using the Debug trait.
+    // println!("{}", password); // 将打印出不带双引号的字符串 This prints the password using the Display trait.
+
     // q: what does from_utf8_lossy() do? compare it with from_utf8()? explain it in english.
     // a: from_utf8_lossy() is a method that converts a byte slice to a string slice, it replaces invalid UTF-8 sequences with the Unicode replacement character U+FFFD, it is lossy because it may lose information, from_utf8() is a method that converts a byte slice to a string slice, it returns an error if the byte slice is not valid UTF-8, it is not lossy because it does not lose information.
 
     // output password strength in stderr
-    let estimate = zxcvbn(&password, &[])?;
-    eprintln!("Password strength: {}", estimate.score());
+    // let estimate = zxcvbn(&password, &[])?;
+    // eprintln!("Password strength: {}", estimate.score());
 
     // q: what is benefit of using eprintln!()?
     // a: eprintln!() is a macro that prints a message to the standard error stream, it is useful for printing error messages, because it prints to the standard error stream, which is separate from the standard output stream.
     // for example, cargo run -- genpass -l 12 >out.txt
     // 将直接打印出密码，而不会将密码强度打印出来。
 
-    Ok(())
+    Ok(password)
+
+    // Ok(String::from_utf8(password)?)
 }

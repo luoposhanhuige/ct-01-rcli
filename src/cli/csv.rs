@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::{fmt, str::FromStr};
 
-use super::verify_input_file;
+use super::verify_file;
 
 #[derive(Debug, Clone, Copy)]
 pub enum OutputFormat {
@@ -12,7 +12,7 @@ pub enum OutputFormat {
 
 #[derive(Debug, Parser)]
 pub struct CsvOpts {
-    #[arg(short, long, value_parser = verify_input_file)] // verify_input_file 函数，写在下方
+    #[arg(short, long, value_parser = verify_file)] // verify_input_file 函数，写在下方
     // 不设缺省值的话，cargo run -- csv -i test.csv，需要指定 -i 参数
     pub input: String,
 
