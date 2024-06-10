@@ -2,22 +2,29 @@
 // cargo add ed25519_dalek
 
 // cargo run -- text sign
-// cargo run -- genpass -l 32 > fixtures/blake3.tx // 生成一个 32 字节的密码
-// cargo run -- text sign -i fixtures/blake3.tx -k fixtures/blake3.tx -f blake3 > fixtures/blake3.sig // 用 blake3 签名
+// 先用 genpass 生成 private key 的例子
+// cargo run -- genpass -l 32 > fixtures/blake3.txt // 生成一个 32 字节的密码
+// cargo run -- text sign -i fixtures/blake3.txt -k fixtures/blake3.tx -f blake3 > fixtures/blake3.sig // 用 blake3 签名
 
+// 再改写代码，用 generate 方法分别生成 blake3 的 sk，以及 ed25519 的 sk 与 pk。
+// cargo run -- text generate -o fixtures // 生成一个 blake3.txt 文件，里面包含了一个 32 字节的 key
+// cargo run -- text generate -o fixtures --format ed25519 // 将生成 ed25519.sk 与 ed25519.pk 两个保存私钥公钥的文件
+
+// blake3
 // cargo run -- text sign -k fixtures/blake3.txt // 等待命令行对话框交互，输入任意字符串比如 hello world!，然后ctrl+d两次
 // 最终获得 hashed value: ****
 // 验证，首先把 blake3.txt 中的 hashed value(类似本例中的 signature)，拷贝，然后，加在下述命令行后面的 --sig 之后
 // cargo run -- text verify -k fixtures/blake3.txt --sig *****
-// cargo run -- text verify -k fixtures/blake3.txt --sig *****
-// cargo run -- text generate -o fixtures
 
-// cargo nextest run -- test_blake3_sign_verify --nocapture //with --nocapture, You will see all the println! output in real-time, regardless of whether the test passes or fails. 方便 println! 调试。
-// cargo nextest run -- test_ed2519_sign_verify
-
+// ed25519
+// cargo run -- text sign -k fixtures/ed25519.sk --format ed25519
 // 一个bug：hello world!
 // cargo run -- text verify -k fixtures/ed25519.pk --format ed25519 --sig -P1Ncx2h36smy_NWgP8hb-iTQPc0RKt7qsKysITbs-cNUL1H_QW30q34POfvkJrlhpJmQuU2_Ep_8K06Iv2EBQ
 // error: unexpected argument '-P' found
+
+// 测试
+// cargo nextest run -- test_blake3_sign_verify --nocapture //with --nocapture, You will see all the println! output in real-time, regardless of whether the test passes or fails. 方便 println! 调试。
+// cargo nextest run -- test_ed2519_sign_verify
 
 use std::{fs, io::Read, path::Path};
 
