@@ -212,7 +212,8 @@ impl TextVerify for ED25519Verifier {
 
 impl KeyLoader for Blake3 {
     fn load(path: impl AsRef<Path>) -> anyhow::Result<Self> {
-        let key = fs::read(path)?;
+        // 因为已经确定是文件路径，所以，这里用 AsRef<Path>，而不再是 &str。
+        let key = fs::read(path)?; // fs::read 用于文件较小，一次性读到内存中，比如hash值之类的。
         Self::try_new(&key)
     }
 }
@@ -282,7 +283,7 @@ pub fn process_text_verify(
 ) -> anyhow::Result<bool> {
     let mut reader = get_reader(input)?; // reader is not an appropriate name, it should be something like signature_reader here.
 
-    let sig = URL_SAFE_NO_PAD.decode(sig.as_bytes())?;
+    let sig = URL_SAFE_NO_PAD.decode(sig.as_bytes())?; // 此处 signature 是一个 base64 编码的字符串，不是文件，需要解码成字节数组。
     let sig = sig.as_slice();
 
     let verified = match format {

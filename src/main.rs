@@ -4,11 +4,11 @@
 
 use std::fs;
 
-use clap::Parser;
+use clap::Parser; // command line argument parser
 use rcli::{
-    process_csv, process_decode, process_encode, process_genpass, process_text_generate,
-    process_text_sign, process_text_verify, Base64SubCommand, Opts, Subcommand, TextSignFormat,
-    TextSubCommand,
+    process_csv, process_decode, process_encode, process_genpass, process_http_serve,
+    process_text_generate, process_text_sign, process_text_verify, Base64SubCommand,
+    HttpSubCommand, Opts, Subcommand, TextSignFormat, TextSubCommand,
 };
 // q: how does the compiler find process_csv, process_genpass, Opts, Subcommand?
 // a: 编译器会根据当前目录结构，自动查找 process_csv、process_genpass、Opts、Subcommand 这几个模块，如果找到了，则会导入这几个模块，如果没有找到，则会报错。
@@ -23,8 +23,13 @@ use rcli::{
 // q: cargo add or cargo install, what is the difference?
 // a: cargo add 是一个 cargo 的插件，用于添加依赖，cargo install 是一个 cargo 的命令，用于安装二进制文件。
 use zxcvbn::zxcvbn;
+// use tracing_subscriber;
+// Yes, the statement tracing_subscriber::fmt::init(); works without needing to import use tracing_subscriber; because you are using the fully qualified path to call the function. In Rust, you can call functions using their fully qualified names without importing the module.
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init(); // 初始化日志记录器,  RUST_LOG=debug cargo run
+
     // q: why does not need to import anyhow before using it?
     // a: 因为 anyhow 是一个宏，可以直接使用，不需要导入。
     // q: where is the definition of anyhow?
@@ -39,17 +44,14 @@ fn main() -> anyhow::Result<()> {
     // a: library 在编译后，会生成一个 .rlib 文件，用于存储编译后的库。
 
     let opts = Opts::parse();
-    // q: what does Opts::parse() mean? what is the return value of Opts::parse()?
-    // a: Opts::parse() 是一个函数调用，用于解析命令行参数，返回值是一个 Opts 结构体，用于存储命令行参数的值。
-    // q: 返回值是一个 Opts 结构体，该结构体的定义在哪里？
-    // a: Opts 结构体的定义在 cli 模块中，cli 模块的定义在 src/cli/mod.rs 文件中。
-    // q: does Opts::parse() receive input from command line by user and parse it into Opts struct?
-    // a: 是的，Opts::parse() 会接收用户在命令行中输入的参数，并将这些参数解析为 Opts 结构体。
-    // q: does parse() require the struct to which it returns value to have field named cmd? and it should be the enum type?
-    // a: 是的，parse() 函数要求返回值的结构体中必须有一个名为 cmd 的字段，而且这个字段的类型必须是一个 enum 类型。
+    // Parse from std::env::args_os. the parse() is a function of clap_builder::derive::Parser
+    // q: why Opts::parse() is used here?
+    // a: Opts::parse() 是一个函数，用于解析命令行参数，这里使用 Opts::parse() 是为了解析命令行参数。
 
     match opts.cmd {
+        // 第一层命令行参数，一对多关系，从一个struct的field，映射到多个变体的enum
         Subcommand::Csv(opts) => {
+            // 因为枚举类型中的单个变体，就是Csv(CsvOpts)形式。再从此映射到CsvOpts这个struct的多个fields
             let output = if let Some(output) = opts.output {
                 output.clone()
             } else {
@@ -127,7 +129,18 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
+
+        Subcommand::Http(subcmd) => {
+            match subcmd {
+                HttpSubCommand::Serve(opts) => {
+                    // println!("{:?}", opts);
+                    // println!("Serving at http://0.0.0.0:{}", opts.port);
+                    process_http_serve(opts.dir, opts.port).await?;
+                }
+            }
+        }
     }
+    // opts.cmd.execute().await?;
 
     Ok(())
 }

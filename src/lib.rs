@@ -7,7 +7,10 @@ mod process;
 mod utils;
 
 // 数据结构
-pub use cli::{Base64Format, Base64SubCommand, Opts, Subcommand, TextSignFormat, TextSubCommand};
+pub use cli::{
+    Base64Format, Base64SubCommand, HttpSubCommand, Opts, Subcommand, TextSignFormat,
+    TextSubCommand,
+};
 // q: in current crate, since the cli is a directory, why is it treated as a module?
 // a: 在当前 crate 中，cli 是一个目录，但是在 Rust 中，目录也可以作为一个模块，所以 cli 目录也被当作一个模块来处理。
 

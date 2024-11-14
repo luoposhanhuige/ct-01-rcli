@@ -77,6 +77,8 @@ pub fn process_genpass(
         );
         // q: what does this statement mean?
         // a: 这个语句的意思是从 UPPER 数组中随机选择一个元素，然后将这个元素添加到 password 数组中。
+        // q: what does *UPPER mean? what is *?
+        // a: *UPPER 表示解引用 UPPER 数组，* 是一个解引用运算符，用于获取指针指向的值。
     }
     // q: what does b mean in b"ABCDEFGHIJKLMNOPQRSTUVWXYZ"?
     // a: b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" 是一个字节字符串字面量，它的类型是 &[u8; 26]，表示一个包含26个字节的数组。

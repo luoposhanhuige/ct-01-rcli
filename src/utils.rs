@@ -2,14 +2,47 @@ use std::fs::File;
 use std::io::Read;
 
 // input 是一个文件路径
+// get_reader 函数返回一个 Box<dyn Read> 类型的 trait object
 pub fn get_reader(input: &str) -> anyhow::Result<Box<dyn Read>> {
     let reader: Box<dyn Read> = if input == "-" {
         Box::new(std::io::stdin())
     } else {
-        Box::new(File::open(input)?)
+        Box::new(File::open(input)?) // 区别于 fs::read(path)?; fs::read 用于文件较小，一次性读到内存中，比如hash值之类的。
     };
     Ok(reader)
 }
+
+// 用 P: AsRef<Path> 改写上述代码
+// pub fn get_reader<P: AsRef<Path>>(input: P) -> anyhow::Result<Box<dyn Read>> {
+//     let reader: Box<dyn Read> = if input.as_ref() == Path::new("-") {
+//         Box::new(io::stdin())
+//     } else {
+//         Box::new(File::open(input)?)
+//     };
+//     Ok(reader)
+// }
+
+// fn main() -> anyhow::Result<()> {
+//     let reader1 = get_reader("file.txt")?;           // &str
+//     let reader2 = get_reader(String::from("file.txt"))?; // String
+//     let reader3 = get_reader(Path::new("file.txt"))?;    // &Path
+//     let reader4 = get_reader(std::path::PathBuf::from("file.txt"))?; // PathBuf
+
+//     // Use the readers...
+
+//     Ok(())
+// }
+
+// The preferable version of get_reader is the one that uses impl AsRef<Path> for its parameter, as it offers greater flexibility and ease of use compared to the &str version.
+
+// Advantages of Using impl AsRef<Path>
+// Flexibility with Path Types: It allows the function to accept various types of path-like arguments such as &str, String, &Path, and PathBuf. This means users of the function can pass different types without needing to convert them explicitly to a &str or Path.
+
+// Convenience for Callers: Callers do not need to convert their input into a specific format, making the function more convenient and ergonomic to use.
+
+// Rust Idiomatic: Using impl AsRef<Path> is idiomatic in Rust for functions dealing with file paths because it leverages Rust’s powerful type system and trait-based design to accept a broad range of input types.
+
+// Code Reusability: You avoid the need to write multiple overloads or conversions in the function's body, leading to cleaner and more maintainable code.
 
 // q: is the reader a type of Vec<u8>?
 // a: No, the reader is a type of Box<dyn Read>.

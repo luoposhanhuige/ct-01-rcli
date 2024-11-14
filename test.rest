@@ -1,0 +1,20 @@
+# GET http://0.0.0.0:8080/Cargo.toml
+# GET http://0.0.0.0:8080/src/main.rs
+# GET http://0.0.0.0:8080/src/abc.rs
+
+# 二进制文件，不能被读为 string，所以会报错
+# stream did not contain valid UTF-8
+# GET http://0.0.0.0:8080/fixtures/ed25519.pk
+
+GET http://0.0.0.0:8080/fixtures/blake3.txt
+
+
+
+
+
+
+
+# In the context of Rust, a .rest file is not specific to the Rust programming language itself. Instead, it is typically used in the context of HTTP testing within development environments like Visual Studio Code (VS Code). The .rest file extension is commonly associated with the REST Client extension for VS Code, which allows developers to write and execute HTTP requests directly from their editor.
+
+# REST Client Extension
+# The REST Client extension for VS Code allows you to send HTTP requests and view responses directly within the editor. This is useful for testing APIs and web services.

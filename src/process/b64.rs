@@ -28,8 +28,6 @@ pub fn process_encode(input: &str, format: Base64Format) -> anyhow::Result<Strin
     // a: 这里的 Vec 是一个动态数组，用于存储读取的数据，因为读取的数据的大小是不确定的，所以需要使用动态数组来存储。
 
     reader.read_to_end(&mut buf)?;
-    // q: since reader is a Box type, how does the compiler know that it is a Read type?
-    // a: 因为 Box 类型实现了 Read trait，所以编译器知道 reader 是一个 Read 类型。
     // q: since buf is a Vec type, what does the compiler store the data into buf? by assigning or by pushing?
     // a: 编译器会将读取的数据存储到 buf 变量中，通过 push() 方法。
     // q: 通过push方法，那么最终 buf 中存储的数据是什么？是一个个字节吗？

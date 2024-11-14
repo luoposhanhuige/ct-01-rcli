@@ -60,7 +60,21 @@ pub enum TextSignFormat {
 
 fn parse_format(format: &str) -> Result<TextSignFormat, anyhow::Error> {
     format.parse()
+    // q: what is .parse()? which struct or trait does this function belong to?
+    // q: what is .parse()?
+    // a: .parse() is a method that converts a string into another type.
+    // q: which struct or trait does the .parse() belong to?
+    // a: The .parse() method belongs to the FromStr trait.
+    // q: in this case, the .parse() converts a string to TextSignFormat?
+    // a: Yes, in this case, the .parse() converts a string to TextSignFormat.
+    // .parse 的定义，内部做了一个 FromStr::from_str(self) 的调用：
+    // #[stable(feature = "rust1", since = "1.0.0")]
+    // pub fn parse<F: FromStr>(&self) -> Result<F, F::Err> {
+    //     FromStr::from_str(self)
+    // }
 }
+// q: what does this function parse_format do?
+// a: This function converts a string into a TextSignFormat enum.
 
 impl FromStr for TextSignFormat {
     type Err = anyhow::Error;
@@ -82,6 +96,25 @@ impl From<TextSignFormat> for &'static str {
         }
     }
 }
+// 1, Explicit Conversion using from:
+// let format = TextSignFormat::Blake3;
+// let format_str: &'static str = From::from(format);
+
+// 2, Implicit Conversion using into:
+// let format = TextSignFormat::ED25519;
+// let format_str: &'static str = format.into();
+
+// 3,
+// fn print_format(format: &'static str) {
+//     println!("TextSignFormat is: {}", format);
+// }
+// let format = TextSignFormat::Blake3;
+// print_format(format.into()); // Automatically converts using From
+
+// 4,
+// let format = TextSignFormat::Blake3;
+// let message = format!("Selected format: {}", <&'static str>::from(format));
+// println!("{}", message);
 
 impl fmt::Display for TextSignFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
