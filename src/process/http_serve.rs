@@ -11,7 +11,10 @@ use axum::{
     Router,
 };
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use tower_http::services::ServeDir;
 use tracing::{info, warn};
+// what is tower-http?
+// tower-http is a library that provides a middleware for serving files from a directory. It is built on top of the tower service abstraction and is used by Axum to serve static files.
 
 #[derive(Debug)]
 struct HttpServeState {
@@ -26,10 +29,22 @@ pub async fn process_http_serve(path: PathBuf, port: u16) -> Result<()> {
     // 个人认为用 config 命名更好，因为这里的 state 是一个 config，而不是一个 state
     // in this case, state 把 main 中的 opts.dir 保存在 HttpServeState 中，然后传递给 router，后续交给 file_handler 处理
     let state = HttpServeState { path: path.clone() };
+    // let dir_service = ServeDir::new(path)
+    //     .append_index_html_on_directories(true)
+    //     .precompressed_gzip()
+    //     .precompressed_br()
+    //     .precompressed_deflate()
+    //     .precompressed_zstd();
 
     let router = Router::new()
         .route("/*path", get(file_handler))
+        // .nest_service("/tower", dir_service)
+        .nest_service("/tower", ServeDir::new(path))
         .with_state(Arc::new(state));
+    // i want to get index.html of the root path by sending a request to the root path, how to set the route?
+    // .route("/", get(index_html)) // index_html is a handler function that returns the content of index.html
+    // why the ".nest_service("/", dir_service)" does not work for getting index.html of the root path?
+    // The reason is that the ServeDir middleware is designed to serve files from a directory, not to serve a specific file. To serve a specific file, you need to create a handler function that reads the file and returns its content.
 
     // run our app with hyper, listening globally on port 8080
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -107,5 +122,26 @@ async fn file_handler(
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
             }
         }
+    }
+}
+
+// cargo nextest run -- test_file_handler
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_file_handler() {
+        let state = Arc::new(HttpServeState {
+            path: PathBuf::from("."),
+        });
+        let path = "Cargo.toml".to_string();
+        let (status, content) = file_handler(State(state), Path(path)).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(content.contains("[package]"));
+        // assert!(content.trim().contains("[package]"));
+        // what is the difference between contains and trim.contains?
+        // contains: Returns true if the given pattern matches a sub-slice of the byte string.
+        // trim.contains: Returns true if the given pattern matches a sub-slice of the byte string after trimming leading and trailing whitespaces.
     }
 }

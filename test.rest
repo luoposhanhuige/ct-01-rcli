@@ -6,11 +6,22 @@
 # stream did not contain valid UTF-8
 # GET http://0.0.0.0:8080/fixtures/ed25519.pk
 
+
+### test static files
 GET http://0.0.0.0:8080/fixtures/blake3.txt
 
+### test static files with tower-http
+GET http://0.0.0.0:8080/Cargo.toml
+# Range: bytes=0-100
+# Accept-Encoding: gzip, deflate, br # 貌似暂时不支持
+Range: bytes=101-
 
+### test index.html of certain directory
+GET http://0.0.0.0:8080/tower/fixtures/
 
-
+### test index.html of whole project
+GET http://0.0.0.0:8080/
+# does not work
 
 
 

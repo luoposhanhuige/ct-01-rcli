@@ -24,7 +24,25 @@ serde = { version = "1.0.198", features = ["derive"] }
 serde_json = "1.0.116"
 serde_yaml = "0.9.34"
 tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "net", "macros", "fs"] } # cargo add tokio --features rt,rt-multi-thread,net,macros,fs
+tower-http = { version = "0.6.1", features = ["compression-full", "cors", "trace", "fs"] } # cargo add tower-http --features compression-full,cors,trace,fs
 tracing = "0.1.40" # cargo add tracing
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] } # cargo add tracing-subscriber --features env-filter
 zxcvbn = "2.2.2" # cargo add zxcvbn
 # duckdb = { version = "0.10.2", features = ["bundled"] }
+
+# zxcvbn 更新到最新版本之后，main.rs 中的代码需要修改，因为函数签名发生了变化，所以够用就不需要更新
+
+# 通常情况下，某个 dependency 默认不会把所有 features 都下载安装，除非把 features = ["all"]，否则只会下载默认的 features
+# 更新某个 dependency，首先，在本文件把版本号更新为最新版，然后运行 cargo update，或者单独运行 cargo update -p 依赖名
+
+# 如何添加 features？
+# 1. 在 dependencies 下添加依赖名和版本号
+# 2. 在依赖名后面添加 { version = "版本号", features = ["feature1", "feature2"] }
+# 3. 运行 cargo build
+
+# 如何查看 features？
+# 1. 在 https://crates.io/crates/依赖名 网页上查看
+# 2. 在 https://docs.rs/依赖名/版本号/依赖名/ 查看
+# 3. 在本地查看，进入依赖名的目录，查看 Cargo.toml 文件
+
+# 安装某个依赖之后，cml 中会出现list of features，可以查看所有的 features
