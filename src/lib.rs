@@ -7,10 +7,11 @@ mod process;
 mod utils;
 
 // 数据结构
-pub use cli::{
-    Base64Format, Base64SubCommand, HttpSubCommand, Opts, Subcommand, TextSignFormat,
-    TextSubCommand,
-};
+pub use cli::*;
+// pub use cli::{
+//     Base64Format, Base64SubCommand, HttpSubCommand, Opts, Subcommand, TextSignFormat,
+//     TextSubCommand,
+// };
 // q: in current crate, since the cli is a directory, why is it treated as a module?
 // a: 在当前 crate 中，cli 是一个目录，但是在 Rust 中，目录也可以作为一个模块，所以 cli 目录也被当作一个模块来处理。
 
@@ -23,11 +24,13 @@ pub use cli::{
 // q: 将 Opts 和 Subcommand 导出，给谁使用呢？ 是 main.rs 吗？
 // a: 是的，将 Opts 和 Subcommand 导出，给 main.rs 使用。
 
+use enum_dispatch::enum_dispatch;
 // 函数
 pub use process::*;
 pub use utils::*;
 
 #[allow(async_fn_in_trait)]
+#[enum_dispatch]
 pub trait CmdExector {
     async fn execute(self) -> anyhow::Result<()>;
 }

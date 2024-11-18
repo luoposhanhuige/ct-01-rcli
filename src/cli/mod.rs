@@ -13,18 +13,20 @@ use std::path::{Path, PathBuf};
 // a: 在这个文件中定义这三个模块，是为了方便管理这三个模块，将这三个模块放在一个文件中，方便查看和维护。
 
 use clap::Parser;
+use enum_dispatch::enum_dispatch;
 
-use crate::CmdExector;
+// use crate::CmdExector;
 
 // 因为 Csv(CsvOpts) 和 Genpass(GenpassOpts) 没有 subcommand，所以直接引入 CsvOpts 和 GenpassOpts。
-use self::{csv::CsvOpts, genpass::GenpassOpts};
+// use self::{csv::CsvOpts, genpass::GenpassOpts};
 
-pub use self::{
-    base64::{Base64Format, Base64SubCommand},
-    csv::OutputFormat,
-    http::HttpSubCommand,
-    text::{TextSignFormat, TextSubCommand},
-};
+pub use self::{base64::*, csv::*, genpass::*, http::*, text::*};
+// pub use self::{
+//     base64::{Base64Format, Base64SubCommand},
+//     csv::OutputFormat,
+//     http::HttpSubCommand,
+//     text::{TextSignFormat, TextSubCommand},
+// };
 // q: what does pub use mean?
 // a: pub use 是用于导出模块中的结构体和方法，使其可以在其他模块中使用。
 
@@ -44,6 +46,7 @@ pub struct Opts {
 // a: Parser 是一个 trait，但是 #[derive(Parser)] 是一个宏，用于为结构体或枚举类型实现 Parser 特性。
 
 #[derive(Debug, Parser)]
+#[enum_dispatch(CmdExector)]
 pub enum Subcommand {
     #[command(name = "csv", about = "Show CSV, or convert CSV to other formats")]
     Csv(CsvOpts), // 这是 clap mod 的特性用法之一，灵活将 enum 特性与 struct 特性结合起来，实现了更复杂的命令行参数解析。
@@ -57,17 +60,18 @@ pub enum Subcommand {
     Http(HttpSubCommand),
 }
 
-impl CmdExector for Subcommand {
-    async fn execute(self) -> anyhow::Result<()> {
-        match self {
-            Subcommand::Csv(opts) => opts.execute().await,
-            Subcommand::Genpass(opts) => opts.execute().await,
-            Subcommand::Base64(opts) => opts.execute().await,
-            Subcommand::Text(opts) => opts.execute().await,
-            Subcommand::Http(opts) => opts.execute().await,
-        }
-    }
-}
+// 因为已经通过 #[enum_dispatch] 宏实现了 CmdExector，所以这里不需要再实现 CmdExector。
+// impl CmdExector for Subcommand {
+//     async fn execute(self) -> anyhow::Result<()> {
+//         match self {
+//             Subcommand::Csv(opts) => opts.execute().await,
+//             Subcommand::Genpass(opts) => opts.execute().await,
+//             Subcommand::Base64(opts) => opts.execute().await,
+//             Subcommand::Text(opts) => opts.execute().await,
+//             Subcommand::Http(opts) => opts.execute().await,
+//         }
+//     }
+// }
 
 fn verify_file(filename: &str) -> Result<String, String> {
     // 验证，并对"-"和真实存在的文件的名称，做个to_string转换，然后return
