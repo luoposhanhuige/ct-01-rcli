@@ -95,6 +95,7 @@ async fn file_handler(
     State(state): State<Arc<HttpServeState>>,
     Path(path): Path<String>,
 ) -> (StatusCode, String) {
+    // 这里有个不足之处，就是返回的内容都是 String 类型，这样对于二进制文件，没法处理。
     //-> impl IntoResponse {}
     // format!("{:?}, {:?}", state, path) // HttpServeState { path: "." }, "Cargo.toml"
     // "." 在 process_http_serve 中传给了 HttpServeState 的 path 字段，并生成了一个 instance 即 state，
@@ -132,6 +133,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_file_handler() {
+        // 关键是构建两个参数 State 和 Path，然后调用 file_handler 函数
         let state = Arc::new(HttpServeState {
             path: PathBuf::from("."),
         });

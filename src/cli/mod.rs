@@ -14,6 +14,8 @@ use std::path::{Path, PathBuf};
 
 use clap::Parser;
 
+use crate::CmdExector;
+
 // 因为 Csv(CsvOpts) 和 Genpass(GenpassOpts) 没有 subcommand，所以直接引入 CsvOpts 和 GenpassOpts。
 use self::{csv::CsvOpts, genpass::GenpassOpts};
 
@@ -47,12 +49,24 @@ pub enum Subcommand {
     Csv(CsvOpts), // 这是 clap mod 的特性用法之一，灵活将 enum 特性与 struct 特性结合起来，实现了更复杂的命令行参数解析。
     #[command(name = "genpass", about = "Generate a random password")]
     Genpass(GenpassOpts),
-    #[command(subcommand)]
+    #[command(subcommand, about = "Base64 encode/decode data")]
     Base64(Base64SubCommand),
-    #[command(subcommand)]
+    #[command(subcommand, about = "text sign/verify")]
     Text(TextSubCommand),
-    #[command(subcommand)]
+    #[command(subcommand, about = "HTTP server")]
     Http(HttpSubCommand),
+}
+
+impl CmdExector for Subcommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            Subcommand::Csv(opts) => opts.execute().await,
+            Subcommand::Genpass(opts) => opts.execute().await,
+            Subcommand::Base64(opts) => opts.execute().await,
+            Subcommand::Text(opts) => opts.execute().await,
+            Subcommand::Http(opts) => opts.execute().await,
+        }
+    }
 }
 
 fn verify_file(filename: &str) -> Result<String, String> {

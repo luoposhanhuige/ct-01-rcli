@@ -1,5 +1,8 @@
 use clap::Parser;
 
+use crate::CmdExector;
+use zxcvbn::zxcvbn;
+
 #[derive(Debug, Parser)]
 pub struct GenpassOpts {
     #[arg(short, long, default_value = "16")]
@@ -27,4 +30,24 @@ pub struct GenpassOpts {
 
     #[arg(long, default_value = "true")]
     pub symbols: bool,
+}
+
+impl CmdExector for GenpassOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let password = crate::process_genpass(
+            self.length,
+            self.uppercase,
+            self.lowercase,
+            self.numbers,
+            self.symbols,
+        )?;
+
+        println!("{}", password); // 将打印出不带双引号的字符串 This prints the password using the Display trait.
+
+        // output password strength in stderr
+        let estimate = zxcvbn(&password, &[])?;
+        eprintln!("Password strength: {}", estimate.score());
+
+        Ok(())
+    }
 }

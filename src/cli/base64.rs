@@ -2,6 +2,8 @@ use std::{fmt, str::FromStr};
 
 use clap::Parser;
 
+use crate::CmdExector;
+
 use super::verify_file;
 
 #[derive(Debug, Parser)]
@@ -106,3 +108,30 @@ impl fmt::Display for Base64Format {
 // The print! macro is similar to write!, but it writes formatted text directly to the standard output (stdout) without the need to specify the output stream explicitly.
 
 // The writeln! macro is similar to write!, but it appends a newline character (\n) to the output.
+
+impl CmdExector for Base64EncodeOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader = crate::get_reader(&self.input)?;
+        let ret = crate::process_encode(&mut reader, self.format)?;
+        println!("{}", ret);
+        Ok(())
+    }
+}
+
+impl CmdExector for Base64DecodeOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader = crate::get_reader(&self.input)?;
+        let ret = crate::process_decode(&mut reader, self.format)?;
+        println!("{}", ret);
+        Ok(())
+    }
+}
+
+impl CmdExector for Base64SubCommand {
+    async fn execute(self) -> anyhow::Result<()> {
+        match self {
+            Base64SubCommand::Encode(opts) => opts.execute().await,
+            Base64SubCommand::Decode(opts) => opts.execute().await,
+        }
+    }
+}

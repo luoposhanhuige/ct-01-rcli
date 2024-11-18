@@ -1,30 +1,31 @@
-use std::{fmt, path::PathBuf, str::FromStr};
-
-use clap::Parser;
+use crate::{
+    get_content, get_reader, process_text_key_generate, process_text_sign, process_text_verify,
+    CmdExector,
+};
 
 use super::{verify_file, verify_path};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use clap::Parser;
+use std::{fmt, path::PathBuf, str::FromStr};
+use tokio::fs;
 
 #[derive(Debug, Parser)]
 pub enum TextSubCommand {
-    #[command(about = "Sign a message with a private/shared key")]
+    #[command(about = "Sign a text with a private/session key and return a signature")]
     Sign(TextSignOpts),
-
-    #[command(about = "Verify a signed message")]
+    #[command(about = "Verify a signature with a public/session key")]
     Verify(TextVerifyOpts),
-
-    #[command(about = "Generate a new key pair")]
-    Generate(TextKeyGenerateOpts),
+    #[command(about = "Generate a random blake3 key or ed25519 key pair")]
+    Generate(KeyGenerateOpts),
 }
 
 #[derive(Debug, Parser)]
 pub struct TextSignOpts {
     #[arg(short, long, value_parser = verify_file, default_value = "-")]
     pub input: String,
-
     #[arg(short, long, value_parser = verify_file)]
     pub key: String,
-
-    #[arg(long, default_value = "blake3", value_parser = parse_format)]
+    #[arg(long, default_value = "blake3", value_parser = parse_text_sign_format)]
     pub format: TextSignFormat,
 }
 
@@ -32,49 +33,31 @@ pub struct TextSignOpts {
 pub struct TextVerifyOpts {
     #[arg(short, long, value_parser = verify_file, default_value = "-")]
     pub input: String,
-
     #[arg(short, long, value_parser = verify_file)]
-    //, default_value = "-"，会与input的default_value冲突，共同从stdin读取
     pub key: String,
-
-    #[arg(short, long)]
+    #[arg(long)]
     pub sig: String,
-
-    #[arg(long, default_value = "blake3", value_parser = parse_format)]
+    #[arg(long, default_value = "blake3", value_parser = parse_text_sign_format)]
     pub format: TextSignFormat,
 }
 
 #[derive(Debug, Parser)]
-pub struct TextKeyGenerateOpts {
-    #[arg(short, long, default_value = "blake3", value_parser = parse_format)]
+pub struct KeyGenerateOpts {
+    #[arg(long, default_value = "blake3", value_parser = parse_text_sign_format)]
     pub format: TextSignFormat,
     #[arg(short, long, value_parser = verify_path)]
-    pub output: PathBuf, // 一个路径
+    pub output_path: PathBuf,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum TextSignFormat {
     Blake3,
-    ED25519,
+    Ed25519,
 }
 
-fn parse_format(format: &str) -> Result<TextSignFormat, anyhow::Error> {
+fn parse_text_sign_format(format: &str) -> Result<TextSignFormat, anyhow::Error> {
     format.parse()
-    // q: what is .parse()? which struct or trait does this function belong to?
-    // q: what is .parse()?
-    // a: .parse() is a method that converts a string into another type.
-    // q: which struct or trait does the .parse() belong to?
-    // a: The .parse() method belongs to the FromStr trait.
-    // q: in this case, the .parse() converts a string to TextSignFormat?
-    // a: Yes, in this case, the .parse() converts a string to TextSignFormat.
-    // .parse 的定义，内部做了一个 FromStr::from_str(self) 的调用：
-    // #[stable(feature = "rust1", since = "1.0.0")]
-    // pub fn parse<F: FromStr>(&self) -> Result<F, F::Err> {
-    //     FromStr::from_str(self)
-    // }
 }
-// q: what does this function parse_format do?
-// a: This function converts a string into a TextSignFormat enum.
 
 impl FromStr for TextSignFormat {
     type Err = anyhow::Error;
@@ -82,45 +65,70 @@ impl FromStr for TextSignFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "blake3" => Ok(TextSignFormat::Blake3),
-            "ed25519" => Ok(TextSignFormat::ED25519),
-            _ => Err(anyhow::anyhow!("Invalid text sign format")),
+            "ed25519" => Ok(TextSignFormat::Ed25519),
+            _ => Err(anyhow::anyhow!("Invalid format")),
         }
     }
 }
 
 impl From<TextSignFormat> for &'static str {
-    fn from(format: TextSignFormat) -> &'static str {
+    fn from(format: TextSignFormat) -> Self {
         match format {
             TextSignFormat::Blake3 => "blake3",
-            TextSignFormat::ED25519 => "ed25519",
+            TextSignFormat::Ed25519 => "ed25519",
         }
     }
 }
-// 1, Explicit Conversion using from:
-// let format = TextSignFormat::Blake3;
-// let format_str: &'static str = From::from(format);
-
-// 2, Implicit Conversion using into:
-// let format = TextSignFormat::ED25519;
-// let format_str: &'static str = format.into();
-
-// 3,
-// fn print_format(format: &'static str) {
-//     println!("TextSignFormat is: {}", format);
-// }
-// let format = TextSignFormat::Blake3;
-// print_format(format.into()); // Automatically converts using From
-
-// 4,
-// let format = TextSignFormat::Blake3;
-// let message = format!("Selected format: {}", <&'static str>::from(format));
-// println!("{}", message);
 
 impl fmt::Display for TextSignFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Into::<&str>::into(*self))
+    }
+}
+
+impl CmdExector for TextSignOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader = get_reader(&self.input)?;
+        let key = get_content(&self.key)?;
+        let sig = process_text_sign(&mut reader, &key, self.format)?;
+        // base64 output
+        let encoded = URL_SAFE_NO_PAD.encode(sig);
+        println!("{}", encoded);
+        Ok(())
+    }
+}
+
+impl CmdExector for TextVerifyOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader = get_reader(&self.input)?;
+        let key = get_content(&self.key)?;
+        let decoded = URL_SAFE_NO_PAD.decode(&self.sig)?;
+        let verified = process_text_verify(&mut reader, &key, &decoded, self.format)?;
+        if verified {
+            println!("✓ Signature verified");
+        } else {
+            println!("⚠ Signature not verified");
+        }
+        Ok(())
+    }
+}
+
+impl CmdExector for KeyGenerateOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let key = process_text_key_generate(self.format)?;
+        for (k, v) in key {
+            fs::write(self.output_path.join(k), v).await?;
+        }
+        Ok(())
+    }
+}
+
+impl CmdExector for TextSubCommand {
+    async fn execute(self) -> anyhow::Result<()> {
         match self {
-            TextSignFormat::Blake3 => write!(f, "blake3"),
-            TextSignFormat::ED25519 => write!(f, "ed25519"),
+            TextSubCommand::Sign(opts) => opts.execute().await,
+            TextSubCommand::Verify(opts) => opts.execute().await,
+            TextSubCommand::Generate(opts) => opts.execute().await,
         }
     }
 }

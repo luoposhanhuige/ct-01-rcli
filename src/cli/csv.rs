@@ -1,6 +1,8 @@
 use clap::Parser;
 use std::{fmt, str::FromStr};
 
+use crate::CmdExector;
+
 use super::verify_file;
 
 #[derive(Debug, Clone, Copy)]
@@ -29,6 +31,27 @@ pub struct CsvOpts {
 
     #[arg(long, default_value_t = true)] // 避免 -h 与 默认的 help 冲突，所以去掉 short
     pub header: bool,
+}
+
+impl CmdExector for CsvOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        // 因为枚举类型中的单个变体，就是Csv(CsvOpts)形式。再从此映射到CsvOpts这个struct的多个fields
+        let output = if let Some(output) = self.output {
+            output
+        } else {
+            // "output.json".into()
+            format!("output.{}", self.format)
+            // q: what does this mean?
+            // a: 这里的 into() 是一个 trait，可以将一个类型转换为另一个类型，这里是将一个 &str 转换为 String 类型。
+            // q: 怎么知道是要转换为 String 类型的？
+            // a: 因为 "output.json" 是一个字符串字面量，所以这里的 into() 会将其转换为 String 类型。
+            // q: 如要要转换为其他类型，如何处理？
+            // a: 如果是其他类型，就需要使用 as 关键字，如：output as i32，这样就将 output 转换为 i32 类型。
+        };
+        crate::process_csv(&self.input, output, self.format)?; // 此处申明的 opts，与上面的 opts，容易产生混淆，这是课堂中老师忽略的地方。
+
+        Ok(())
+    }
 }
 
 // fn parse_format(format: &str) -> Result<OutputFormat, String> {
